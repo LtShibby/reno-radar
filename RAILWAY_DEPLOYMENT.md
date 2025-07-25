@@ -6,12 +6,19 @@
 1. Go to [railway.app](https://railway.app) and sign up
 2. Click **"New Project"** → **"Deploy from GitHub repo"**
 3. Connect your GitHub account and select `reno-radar` repo
-4. Railway will automatically detect the `backend/Dockerfile` and use Docker
+4. **🚨 CRITICAL**: Railway will initially fail because it's a monorepo - this is expected!
 
-### **B. Configure Railway Project**
+### **B. Fix Railway Project Settings**
+
+**🎯 STEP 1: Set Root Directory (MOST IMPORTANT)**
 1. In Railway dashboard, click your project
-2. Go to **Settings** → **Environment**
-3. Add these environment variables:
+2. Go to **Settings** → **Service Settings** 
+3. **Set "Root Directory" to `backend`** ← This is the key fix!
+4. Click **Save** - Railway will now find the Dockerfile
+
+**🎯 STEP 2: Add Environment Variables**
+1. Still in Settings, go to **Environment** tab
+2. Add these environment variables:
    ```
    NODE_ENV=production
    PORT=3001
@@ -20,10 +27,11 @@
    ```
 
 ### **C. Deploy**
-1. Railway will automatically build using the `backend/Dockerfile`
-2. Docker ensures all Puppeteer dependencies are properly installed
-3. Wait for deployment to complete (3-5 minutes for first build)
-4. Copy your Railway app URL (something like `https://your-app-name.railway.app`)
+1. After setting the Root Directory to `backend`, Railway will **automatically redeploy**
+2. Railway will now detect and use `backend/Dockerfile` 
+3. Docker ensures all Puppeteer dependencies are properly installed
+4. Wait for deployment to complete (3-5 minutes for first build)
+5. Copy your Railway app URL (something like `https://your-app-name.railway.app`)
 
 ---
 
@@ -45,7 +53,17 @@
 
 ---
 
-## **Step 3: Test Full Application**
+## **Step 3: Verify Setup**
+
+### **✅ Quick Checklist:**
+- [ ] Root Directory set to `backend` in Railway Service Settings
+- [ ] Environment variables added (NODE_ENV, PORT, etc.)
+- [ ] Deployment shows "Building..." then "Success"
+- [ ] Railway URL is accessible
+
+---
+
+## **Step 4: Test Full Application**
 
 ### **A. Test Backend Health**
 Visit: `https://your-railway-app-name.railway.app/health`
@@ -56,7 +74,7 @@ Should return:
 ```
 
 ### **B. Test Scraping API**
-Visit: `https://your-railway-app-name.railway.app/api/scrape?query=renovation`
+Visit: `https://your-railway-app-name.railway.app/api/scrape?query=tiles`
 
 Should return JSON with comments array.
 
@@ -68,6 +86,11 @@ Should return JSON with comments array.
 ---
 
 ## **Troubleshooting**
+
+### **🚨 Monorepo Issues:**
+- **"No build plan found"**: Set Root Directory to `backend` in Service Settings
+- **Nixpacks confusion**: Solved by Root Directory + Dockerfile detection
+- **Initial deployment fails**: Expected behavior - fix with Root Directory setting
 
 ### **Railway Issues:**
 - **Docker build fails**: Check `backend/Dockerfile` syntax and dependencies
