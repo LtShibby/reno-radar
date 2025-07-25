@@ -86,11 +86,27 @@ async function autoScroll(page, maxScrolls = 10) {
 async function scrapeTikTokComments(query) {
   let browser;
   try {
-    browser = await puppeteer.launch({ 
+    // Docker-compatible Puppeteer configuration
+    const launchOptions = {
       headless: DEBUG_HEADLESS,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ],
       slowMo: DEBUG_HEADLESS ? 0 : 100 // slow down when visible for debugging
-    });
+    };
+
+    // Use system Chromium in Docker/production
+    if (NODE_ENV === 'production' && process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    browser = await puppeteer.launch(launchOptions);
     
     const page = await browser.newPage();
     
