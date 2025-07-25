@@ -10,9 +10,23 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const DEBUG_SCREENSHOTS = process.env.DEBUG_SCREENSHOTS === 'true';
 const DEBUG_HEADLESS = process.env.DEBUG_HEADLESS !== 'false'; // default to headless
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Middleware
-app.use(cors());
+// Production optimizations
+const PRODUCTION_TIMEOUT = 30000; // 30 seconds for production
+const DEV_TIMEOUT = 10000; // 10 seconds for development
+
+// Middleware - CORS configuration for production
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    /\.vercel\.app$/,
+    /\.railway\.app$/
+  ],
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Intent scoring keywords
@@ -391,7 +405,14 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Reno Radar backend running on port ${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔍 Scrape endpoint: http://localhost:${PORT}/api/scrape?query=renovation`);
+  console.log(`🚀 Reno Radar backend running on port ${PORT} (${NODE_ENV} mode)`);
+  
+  if (NODE_ENV === 'development') {
+    console.log(`📡 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔍 Scrape endpoint: http://localhost:${PORT}/api/scrape?query=renovation`);
+  } else {
+    console.log(`📡 Health check: /health`);
+    console.log(`🔍 Scrape endpoint: /api/scrape?query=renovation`);
+    console.log(`🌐 Railway deployment ready!`);
+  }
 }); 
