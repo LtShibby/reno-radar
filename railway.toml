@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [build.nixpacksConfig]
-nixPkgs = ["nodejs", "npm"]
+nixPkgs = ["nodejs"]
 
 [deploy]
 workingDirectory = "backend"
