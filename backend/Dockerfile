@@ -26,21 +26,22 @@ RUN apt-get update && apt-get install -y \
 # Create and use app directory
 WORKDIR /app
 
-# Copy app files
+# Pre-copy just package files to leverage Docker layer caching
+COPY package*.json ./
+
+# Install only production dependencies — faster, lighter
+RUN npm ci --omit=dev
+
+# Copy the rest of the app
 COPY . .
 
-# Install dependencies
-RUN npm install
-
-# Set environment variables for Puppeteer
+# Puppeteer environment tweaks
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_ENV=production
+ENV PORT=3001
 
-# Puppeteer expects Chromium at this path
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Expose the port your app listens on (default: 3001)
+# Expose the backend port
 EXPOSE 3001
 
-# Run the app
-CMD ["node", "server.js"] 
+# Start it up
+CMD ["node", "server.js"]
