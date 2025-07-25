@@ -1,7 +1,11 @@
 [build]
 builder = "NIXPACKS"
 
+[build.nixpacksConfig]
+nixPkgs = ["nodejs", "npm"]
+
 [deploy]
+workingDirectory = "backend"
 startCommand = "npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300

@@ -23,9 +23,10 @@
    ```
 
 ### **C. Deploy**
-1. Railway will automatically deploy from your `backend/railway.toml` config
-2. Wait for deployment to complete (2-3 minutes)
-3. Copy your Railway app URL (something like `https://your-app-name.railway.app`)
+1. Railway will automatically deploy using the `railway.toml` and `nixpacks.toml` configs in the root directory
+2. These configs tell Railway to build and run from the `backend/` folder
+3. Wait for deployment to complete (2-3 minutes)
+4. Copy your Railway app URL (something like `https://your-app-name.railway.app`)
 
 ---
 
@@ -73,6 +74,7 @@ Should return JSON with comments array.
 
 ### **Railway Issues:**
 - **Build fails**: Check `backend/package.json` has all dependencies
+- **"No build plan" error**: Fixed with `railway.toml` and `nixpacks.toml` in root directory
 - **App crashes**: Check Railway logs in dashboard
 - **Timeout errors**: Puppeteer needs time - normal for first requests
 
