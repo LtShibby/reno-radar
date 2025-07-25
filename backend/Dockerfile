@@ -1,7 +1,7 @@
 # Use Node.js 18 slim as the base image
 FROM node:18-slim
 
-# Puppeteer-specific dependencies
+# Puppeteer-specific dependencies + Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    chromium \
     --no-install-recommends && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -39,6 +40,7 @@ COPY . .
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # Expose the backend port
 EXPOSE 3001
