@@ -1,0 +1,24 @@
+{
+  "name": "reno-radar-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Reno Radar - TikTok comment scraping for renovation leads",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test-scraping.js",
+    "test:validation": "node test-comment-extraction.js",
+    "debug": "DEBUG_SCREENSHOTS=true node server.js",
+    "debug:visual": "DEBUG_SCREENSHOTS=true DEBUG_HEADLESS=false node server.js"
+  },
+  "keywords": ["tiktok", "scraping", "renovation", "leads"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "puppeteer": "^21.5.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  }
+}
