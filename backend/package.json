@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "test": "node test-scraping.js",
     "test:validation": "node test-comment-extraction.js",
+    "test:dom": "node test-dom-structure.js",
     "debug": "DEBUG_SCREENSHOTS=true node server.js",
     "debug:visual": "DEBUG_SCREENSHOTS=true DEBUG_HEADLESS=false node server.js"
   },

@@ -59,17 +59,14 @@ A lean MVP SaaS app that helps renovation contractors find leads by scraping Tik
 
    The frontend will run on `http://localhost:3000`
 
-## 🌐 Ngrok Setup (for production)
+## 🚀 Deployment
 
-When ready to deploy the backend publicly:
+For detailed deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**
 
-1. Install ngrok: https://ngrok.com/
-2. Expose your backend:
-   ```bash
-   ngrok http 3001
-   ```
-3. Update `NEXT_PUBLIC_BACKEND_URL` in `.env.local` with your ngrok URL
-4. Deploy frontend to Vercel
+### Quick Deploy Summary:
+1. **Frontend (Vercel):** Set Root Directory to `frontend`
+2. **Backend (Local + Ngrok):** Expose via `ngrok http 3001`
+3. **Connect:** Set `NEXT_PUBLIC_BACKEND_URL` to Ngrok URL in Vercel
 
 ## 📡 API Endpoints
 

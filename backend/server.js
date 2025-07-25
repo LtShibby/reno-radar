@@ -122,21 +122,8 @@ async function scrapeTikTokComments(query) {
           await page.screenshot({ path: `tiktok_debug_${Date.now()}.png`, fullPage: true });
         }
 
-        // Extract comments with improved text targeting
+        // Extract comments using the streamlined approach
         const comments = await page.evaluate((url) => {
-          const comments = [];
-          
-          // Helper function to check if text looks like a username
-          function isUsername(text) {
-            if (!text || text.length < 2) return true;
-            // Usernames are typically short, have special chars, or start with @
-            return text.startsWith('@') || 
-                   text.length < 3 || 
-                   /^[a-zA-Z0-9._]+$/.test(text) ||
-                   /^\d+$/.test(text) ||
-                   text.includes('🌹') || text.includes('××');
-          }
-          
           // Helper function to check if text is TikTok UI elements
           function isTikTokUIElement(text) {
             if (!text) return true;
@@ -171,7 +158,6 @@ async function scrapeTikTokComments(query) {
           // Helper function to check if text is likely a real comment
           function isValidComment(text) {
             if (!text || text.length < 5) return false;
-            if (isUsername(text)) return false;
             if (isTikTokUIElement(text)) return false;
             
             // Real comments usually have spaces, punctuation, or common words
@@ -194,186 +180,48 @@ async function scrapeTikTokComments(query) {
             
             return hasNaturalLanguage && hasCommentCharacteristics && text.length < 500;
           }
-          
-          // Strategy 1: Follow the exact DOM path provided by user
-          // css-dwvbgc-DivCommentMain > DivCommentListContainer > DivCommentObjectWrapper
-          let mainCommentContainer = document.querySelector('.css-dwvbgc-DivCommentMain');
-          
-          console.log(`Found main comment container: ${!!mainCommentContainer}`);
-          
-          let commentWrappers = [];
-          if (mainCommentContainer) {
-            // Look for DivCommentListContainer
-            const listContainer = mainCommentContainer.querySelector('[class*="DivCommentListContainer"]');
-            console.log(`Found list container: ${!!listContainer}`);
-            
-            if (listContainer) {
-              // Get all DivCommentObjectWrapper elements
-              commentWrappers = Array.from(listContainer.querySelectorAll('[class*="DivCommentObjectWrapper"]'));
-              console.log(`Found ${commentWrappers.length} comment object wrappers`);
-            }
-          }
-          
-          // Strategy 2: Fallback - broader search for comment containers
-          if (commentWrappers.length === 0) {
-            console.log('Fallback: searching for comment wrappers broadly');
-            commentWrappers = Array.from(document.querySelectorAll('[class*="DivCommentObjectWrapper"], [class*="CommentObjectWrapper"]'));
-            console.log(`Fallback found ${commentWrappers.length} comment wrappers`);
-          }
-          
-          // Extract from comment wrappers following the exact DOM path
-          for (let i = 0; i < Math.min(20, commentWrappers.length); i++) {
-            const wrapper = commentWrappers[i];
-            console.log(`\n--- Processing comment wrapper ${i + 1} ---`);
-            
-            // Follow the exact path: DivCommentObjectWrapper > DivCommentItemWrapper > DivCommentContentWrapper > comment-level-1 > p
-            const itemWrapper = wrapper.querySelector('[class*="DivCommentItemWrapper"]');
-            console.log(`Found item wrapper: ${!!itemWrapper}`);
-            
-            if (!itemWrapper) continue;
-            
-            const contentWrapper = itemWrapper.querySelector('[class*="DivCommentContentWrapper"]');
-            console.log(`Found content wrapper: ${!!contentWrapper}`);
-            
-            if (!contentWrapper) continue;
-            
-            const commentLevel = contentWrapper.querySelector('.comment-level-1, [class*="comment-level-1"]');
-            console.log(`Found comment-level-1: ${!!commentLevel}`);
-            
-            if (!commentLevel) continue;
-            
-            // Get the paragraph with the actual comment text
-            const commentParagraph = commentLevel.querySelector('p');
-            console.log(`Found comment paragraph: ${!!commentParagraph}`);
-            
-            if (!commentParagraph) continue;
-            
-            const commentText = commentParagraph.textContent.trim();
-            console.log(`Raw comment text: "${commentText}"`);
-            
-            // Look for username in the wrapper (usually in a different section)
-            let username = 'Unknown';
-            const usernameSelectors = [
-              '[data-e2e="comment-username"]',
-              'a[href*="@"]', 
-              '[class*="username"]',
-              'a', 
-              'strong'
-            ];
-            
-            for (const selector of usernameSelectors) {
-              const usernameEl = wrapper.querySelector(selector);
-              if (usernameEl && usernameEl.textContent.trim()) {
-                const potentialUsername = usernameEl.textContent.trim();
-                if (potentialUsername !== commentText) {
-                  username = potentialUsername;
-                  break;
-                }
-              }
-            }
-            
-            console.log(`Username: "${username}"`);
-            
-            // Validate the comment
-            if (isValidComment(commentText)) {
-              comments.push({
-                videoUrl: url,
-                commentText: commentText,
-                username: username
-              });
-              console.log(`✅ Added comment: "${commentText.substring(0, 100)}..."`);
-            } else {
-              console.log(`❌ Rejected comment: failed validation`);
-            }
-          }
-          
-          // Strategy 3: Direct search for comment-level-1 elements with paragraphs
-          if (comments.length === 0) {
-            console.log('Using direct comment-level-1 search strategy');
-            const commentElements = document.querySelectorAll('.comment-level-1, [class*="comment-level-1"]');
-            console.log(`Found ${commentElements.length} comment-level-1 elements directly`);
-            
-            for (let i = 0; i < Math.min(15, commentElements.length); i++) {
-              const el = commentElements[i];
+
+          const commentItemContainers = document.querySelectorAll('div.css-1i7ohvi-DivCommentItemContainer');
+          console.log(`Found ${commentItemContainers.length} comment item containers`);
+
+          const comments = [];
+
+          commentItemContainers.forEach((container, index) => {
+            try {
+              console.log(`\n--- Processing comment container ${index + 1} ---`);
               
-              // Look for paragraph inside comment-level-1 (following the exact structure)
-              const paragraph = el.querySelector('p');
-              if (paragraph) {
-                const text = paragraph.textContent.trim();
-                console.log(`Direct comment text from p: "${text.substring(0, 50)}..."`);
-                
-                if (isValidComment(text)) {
-                  comments.push({
-                    videoUrl: url,
-                    commentText: text,
-                    username: 'Unknown'
-                  });
-                  console.log(`✅ Added direct comment: "${text.substring(0, 50)}..."`);
-                }
+              const commentTextEl = container.querySelector('p[data-e2e="comment-level-1"]');
+              const userLink = container.querySelector('a[href^="/@"]');
+              const usernameEl = userLink?.querySelector('span[data-e2e="comment-username-1"]');
+
+              const commentText = commentTextEl?.textContent?.trim();
+              const username = usernameEl?.textContent?.trim() || 'Unknown';
+              const profileUrl = userLink?.getAttribute('href') 
+                ? `https://www.tiktok.com${userLink.getAttribute('href')}` 
+                : null;
+
+              console.log(`Comment text: "${commentText?.substring(0, 50)}..."`);
+              console.log(`Username: "${username}"`);
+              console.log(`Profile URL: "${profileUrl || 'Not found'}"`);
+
+              if (commentText && commentText.length > 3 && isValidComment(commentText)) {
+                comments.push({
+                  videoUrl: url,
+                  commentText,
+                  username,
+                  profileUrl
+                });
+                console.log(`✅ Added comment: "${username}" → "${commentText.substring(0, 100)}..."`);
               } else {
-                // Fallback to element text if no paragraph
-                const text = el.textContent.trim();
-                console.log(`Direct comment text: "${text.substring(0, 50)}..."`);
-                
-                if (isValidComment(text)) {
-                  comments.push({
-                    videoUrl: url,
-                    commentText: text,
-                    username: 'Unknown'
-                  });
-                  console.log(`✅ Added direct comment: "${text.substring(0, 50)}..."`);
-                }
+                console.log(`❌ Rejected comment: ${!commentText ? 'no text' : commentText.length <= 3 ? 'too short' : 'failed validation'}`);
               }
+            } catch (err) {
+              console.warn('Error parsing comment container:', err);
             }
-          }
-          
-          // Strategy 4: Final fallback - Look for any paragraph with TUXText class (like the example)
-          if (comments.length === 0) {
-            console.log('Using TUXText paragraph search strategy');
-            const tuxTextElements = document.querySelectorAll('p.TUXText, p[class*="TUXText"], p[class*="StyledTUXText"]');
-            console.log(`Found ${tuxTextElements.length} TUXText paragraphs`);
-            
-            for (let i = 0; i < Math.min(15, tuxTextElements.length); i++) {
-              const el = tuxTextElements[i];
-              const text = el.textContent.trim();
-              console.log(`TUXText paragraph: "${text.substring(0, 50)}..."`);
-              
-              if (isValidComment(text) && text.length < 300) {
-                comments.push({
-                  videoUrl: url,
-                  commentText: text,
-                  username: 'Unknown'
-                });
-                console.log(`✅ Added TUXText comment: "${text.substring(0, 50)}..."`);
-                
-                if (comments.length >= 10) break;
-              }
-            }
-          }
-          
-          // Strategy 5: Final fallback - Look for any valid text
-          if (comments.length === 0) {
-            console.log('Using final fallback strategy - looking for any valid text');
-            const allTextElements = document.querySelectorAll('p, span, div');
-            
-            for (let i = 0; i < Math.min(50, allTextElements.length); i++) {
-              const el = allTextElements[i];
-              const text = el.textContent.trim();
-              
-              if (isValidComment(text) && text.length < 300) {
-                comments.push({
-                  videoUrl: url,
-                  commentText: text,
-                  username: 'Unknown'
-                });
-                
-                if (comments.length >= 10) break;
-              }
-            }
-          }
-          
+          });
+
           console.log(`Extracted ${comments.length} valid comments`);
-          return comments.slice(0, 15); // Limit to 15 comments per video
+          return comments;
         }, videoUrl);
 
         console.log(`Extracted ${comments.length} comments from ${videoUrl}`);

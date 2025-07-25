@@ -44,7 +44,7 @@ export default function ResultsTable({ comments }: ResultsTableProps) {
   };
 
   const exportToCSV = () => {
-    const headers = ['Video URL', 'Comment', 'Username', 'Intent Score', 'Keywords', 'Contacted'];
+    const headers = ['Video URL', 'Comment', 'Username', 'Profile URL', 'Intent Score', 'Keywords', 'Contacted'];
     const csvContent = [
       headers.join(','),
       ...comments.map((comment, index) => {
@@ -54,6 +54,7 @@ export default function ResultsTable({ comments }: ResultsTableProps) {
           `"${comment.videoUrl}"`,
           `"${comment.commentText.replace(/"/g, '""')}"`,
           `"${comment.username || 'Unknown'}"`,
+          `"${comment.profileUrl || ''}"`,
           comment.intentScore,
           `"${comment.matchedKeywords.join(', ')}"`,
           contacted
@@ -101,7 +102,7 @@ export default function ResultsTable({ comments }: ResultsTableProps) {
                 Video & Comment
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User
+                User Profile
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Intent
@@ -139,7 +140,19 @@ export default function ResultsTable({ comments }: ResultsTableProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {comment.username || 'Unknown'}
+                      {comment.profileUrl ? (
+                        <a
+                          href={comment.profileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                          title={`View TikTok Profile: ${comment.profileUrl}`}
+                        >
+                          {comment.username || 'TikTok User'}
+                        </a>
+                      ) : (
+                        comment.username || 'Unknown'
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
