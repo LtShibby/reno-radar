@@ -6,7 +6,7 @@
 1. Go to [railway.app](https://railway.app) and sign up
 2. Click **"New Project"** → **"Deploy from GitHub repo"**
 3. Connect your GitHub account and select `reno-radar` repo
-4. Railway will detect multiple services - **choose the `backend` folder**
+4. Railway will automatically detect the `backend/Dockerfile` and use Docker
 
 ### **B. Configure Railway Project**
 1. In Railway dashboard, click your project
@@ -15,17 +15,14 @@
    ```
    NODE_ENV=production
    PORT=3001
-   ```
-4. Optional debugging variables (don't use in production):
-   ```
-   DEBUG_SCREENSHOTS=false
    DEBUG_HEADLESS=true
+   DEBUG_SCREENSHOTS=false
    ```
 
 ### **C. Deploy**
-1. Railway will automatically deploy using the `railway.toml` and `nixpacks.toml` configs in the root directory
-2. These configs tell Railway to build and run from the `backend/` folder
-3. Wait for deployment to complete (2-3 minutes)
+1. Railway will automatically build using the `backend/Dockerfile`
+2. Docker ensures all Puppeteer dependencies are properly installed
+3. Wait for deployment to complete (3-5 minutes for first build)
 4. Copy your Railway app URL (something like `https://your-app-name.railway.app`)
 
 ---
@@ -73,10 +70,10 @@ Should return JSON with comments array.
 ## **Troubleshooting**
 
 ### **Railway Issues:**
-- **Build fails**: Check `backend/package.json` has all dependencies
-- **"No build plan" error**: Fixed with `railway.toml` and `nixpacks.toml` in root directory
-- **App crashes**: Check Railway logs in dashboard
-- **Timeout errors**: Puppeteer needs time - normal for first requests
+- **Docker build fails**: Check `backend/Dockerfile` syntax and dependencies
+- **Puppeteer crashes**: Fixed with proper Chrome/Chromium dependencies in Docker
+- **App crashes**: Check Railway logs in dashboard - Docker provides better error messages
+- **Timeout errors**: Puppeteer needs time - normal for first requests (especially with Docker)
 
 ### **CORS Issues:**
 - Verify Vercel URL is allowed in `backend/server.js` corsOptions
@@ -95,11 +92,32 @@ Should return JSON with comments array.
 
 ---
 
+## **Local Docker Testing (Optional)**
+
+Test the Docker build locally before deploying:
+
+```bash
+# Build Docker image
+cd backend
+docker build -t reno-radar-backend .
+
+# Run Docker container
+docker run -p 3001:3001 reno-radar-backend
+
+# Test the containerized app
+curl http://localhost:3001/health
+```
+
+---
+
 ## **Quick Commands**
 ```bash
-# Test locally first
+# Test locally (without Docker)
 cd backend && npm start
 cd frontend && npm run dev
+
+# Test Docker build locally
+cd backend && docker build -t reno-radar-backend .
 
 # Check Railway deployment
 curl https://your-railway-app.railway.app/health
