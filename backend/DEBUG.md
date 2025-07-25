@@ -63,11 +63,12 @@ This will:
 
 ### ✅ **Success Indicators**
 ```
-Found 3 video links: [urls...]
-Processing video: https://tiktok.com/@user/video/123
-Found 15 comment elements using selectors
-Extracted 12 comments from [url]
-Found 25 comments
+Found 12 comment item containers
+--- Processing comment container 1 ---
+Comment text: "the search being 'Indian lady target' is sending me..."
+Username: "Mel ya later" (from span)
+Profile URL: "https://www.tiktok.com/@melizaaorellana"
+✅ Added comment: "Mel ya later" → "the search being 'Indian lady target' is sending me..."
 ```
 
 ### ❌ **Problem Indicators**

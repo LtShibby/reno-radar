@@ -45,21 +45,34 @@ function testDOMExtraction() {
           const username = usernameSpan.textContent.trim();
           console.log(`👤 Username: "${username}"`);
           
-          // Test URL extraction
-          const userLinkElement = contentContainer.querySelector('a[class*="StyledUserLinkName"]');
+          // Test URL extraction with new logic
+          const userLinkElement = contentContainer.querySelector('a[href^="/@"]');
           console.log(`✅ Found user link element: ${!!userLinkElement}`);
           
           let profileUrl = null;
+          let extractedUsername = 'Unknown';
+          
           if (userLinkElement) {
             const href = userLinkElement.getAttribute('href');
             if (href && href.startsWith('/@')) {
               profileUrl = `https://www.tiktok.com${href}`;
               console.log(`🔗 Profile URL: "${profileUrl}"`);
             }
+            
+            // Test new username extraction logic
+            const usernameEl = userLinkElement.querySelector('span[data-e2e="comment-username-1"]');
+            if (usernameEl && usernameEl.textContent.trim()) {
+              extractedUsername = usernameEl.textContent.trim();
+              console.log(`👤 Username from span: "${extractedUsername}"`);
+            } else if (userLinkElement.textContent.trim()) {
+              extractedUsername = userLinkElement.textContent.trim();
+              console.log(`👤 Username from link text: "${extractedUsername}"`);
+            }
           }
           
           console.log(`\n🎯 Final result:`);
-          console.log(`Username: "${username}"`);
+          console.log(`Original username: "${username}"`);
+          console.log(`Extracted username: "${extractedUsername}"`);
           console.log(`Profile URL: "${profileUrl || 'Not found'}"`);
           console.log(`Comment: "${commentText}"`);
           
@@ -67,14 +80,14 @@ function testDOMExtraction() {
           const expectedProfileUrl = 'https://www.tiktok.com/@melizaaorellana';
           const expectedComment = 'the search being "Indian lady target" is sending me';
           
-          if (username === expectedUsername && 
+          if (extractedUsername === expectedUsername && 
               commentText.includes(expectedComment) &&
               profileUrl === expectedProfileUrl) {
-            console.log(`\n🎉 SUCCESS: Both username and profile URL extracted correctly!`);
+            console.log(`\n🎉 SUCCESS: Both username and profile URL extracted correctly with new logic!`);
             return true;
           } else {
             console.log(`\n❌ FAILED: Expected different values`);
-            console.log(`Expected username: "${expectedUsername}", got: "${username}"`);
+            console.log(`Expected username: "${expectedUsername}", got: "${extractedUsername}"`);
             console.log(`Expected profile URL: "${expectedProfileUrl}", got: "${profileUrl}"`);
             console.log(`Expected comment to contain: "${expectedComment}"`);
             return false;

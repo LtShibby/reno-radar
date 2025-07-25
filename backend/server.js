@@ -80,8 +80,15 @@ async function scrapeTikTokComments(query) {
     
     const page = await browser.newPage();
     
-    // Set user agent
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    // Set a more realistic user agent
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0'
+    ];
+    const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+    await page.setUserAgent(randomUA);
+    console.log(`Using user agent: ${randomUA.substring(0, 50)}...`);
     
     // Search TikTok
     const searchUrl = `https://www.tiktok.com/search?q=${encodeURIComponent(query)}`;
@@ -90,19 +97,59 @@ async function scrapeTikTokComments(query) {
     // Wait for search results to load
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Get video links (top 3)
+    // Debug: Check what's on the search page
+    const pageInfo = await page.evaluate(() => {
+      return {
+        title: document.title,
+        url: window.location.href,
+        hasVideoLinks: document.querySelectorAll('a[href*="/video/"]').length,
+        hasAtLinks: document.querySelectorAll('a[href*="/@"]').length,
+        totalLinks: document.querySelectorAll('a').length,
+        bodyText: document.body.textContent.substring(0, 200)
+      };
+    });
+    
+    console.log('Page debug info:', pageInfo);
+
+    // Get video links (top 3) with multiple strategies
     const videoLinks = await page.evaluate(() => {
-      const links = Array.from(document.querySelectorAll('a[href*="/video/"]'));
-      return links.slice(0, 3).map(link => link.href);
+      console.log('Searching for video links...');
+      
+      // Strategy 1: Original selector
+      let links = Array.from(document.querySelectorAll('a[href*="/video/"]'));
+      console.log(`Strategy 1 found ${links.length} links with href containing "/video/"`);
+      
+      // Strategy 2: Look for TikTok video patterns
+      if (links.length === 0) {
+        links = Array.from(document.querySelectorAll('a')).filter(a => {
+          const href = a.href;
+          return href && (href.includes('/video/') || href.match(/@[\w\\.]+\/video\/\d+/));
+        });
+        console.log(`Strategy 2 found ${links.length} links with video patterns`);
+      }
+      
+      // Strategy 3: Look for any links to user pages that might contain videos
+      if (links.length === 0) {
+        links = Array.from(document.querySelectorAll('a[href*="/@"]')).slice(0, 3);
+        console.log(`Strategy 3 found ${links.length} user profile links as fallback`);
+      }
+      
+      const videoUrls = links.slice(0, 3).map(link => link.href);
+      console.log('Final video URLs:', videoUrls);
+      return videoUrls;
     });
 
     console.log(`Found ${videoLinks.length} video links:`, videoLinks);
 
+    // Always take screenshot of search page when debugging
+    if (DEBUG_SCREENSHOTS) {
+      await page.screenshot({ path: `search_page_${Date.now()}.png`, fullPage: true });
+      console.log(`Search page screenshot saved`);
+    }
+
     if (videoLinks.length === 0) {
       console.log('No video links found. The search page might have different selectors or be blocking.');
-      if (DEBUG_SCREENSHOTS) {
-        await page.screenshot({ path: `search_page_debug_${Date.now()}.png`, fullPage: true });
-      }
+      console.log('Check the search_page_*.png screenshot to see what TikTok is showing.');
     }
 
     const allComments = [];
@@ -117,9 +164,10 @@ async function scrapeTikTokComments(query) {
         // Auto-scroll to load comments progressively
         await autoScroll(page, 15);
 
-        // Optional: Take screenshot for debugging
+        // Take screenshot for debugging
         if (DEBUG_SCREENSHOTS) {
-          await page.screenshot({ path: `tiktok_debug_${Date.now()}.png`, fullPage: true });
+          await page.screenshot({ path: `video_page_${Date.now()}.png`, fullPage: true });
+          console.log(`Screenshot saved for video: ${videoUrl}`);
         }
 
         // Extract comments using the streamlined approach
@@ -181,8 +229,41 @@ async function scrapeTikTokComments(query) {
             return hasNaturalLanguage && hasCommentCharacteristics && text.length < 500;
           }
 
-          const commentItemContainers = document.querySelectorAll('div.css-1i7ohvi-DivCommentItemContainer');
-          console.log(`Found ${commentItemContainers.length} comment item containers`);
+          // Debug: Check what comment-related elements exist
+          const debugInfo = {
+            url: window.location.href,
+            title: document.title,
+            specificContainers: document.querySelectorAll('div.css-1i7ohvi-DivCommentItemContainer').length,
+            anyCommentContainers: document.querySelectorAll('div[class*="CommentItem"], div[class*="CommentContainer"]').length,
+            commentLevelElements: document.querySelectorAll('p[data-e2e="comment-level-1"]').length,
+            userLinks: document.querySelectorAll('a[href^="/@"]').length,
+            totalDivs: document.querySelectorAll('div').length
+          };
+          console.log('Video page debug info:', debugInfo);
+
+          // Try multiple selectors for comment containers
+          let commentItemContainers = document.querySelectorAll('div.css-1i7ohvi-DivCommentItemContainer');
+          console.log(`Strategy 1: Found ${commentItemContainers.length} containers with specific class`);
+          
+          // Fallback strategies
+          if (commentItemContainers.length === 0) {
+            commentItemContainers = document.querySelectorAll('div[class*="CommentItemContainer"]');
+            console.log(`Strategy 2: Found ${commentItemContainers.length} containers with CommentItemContainer`);
+          }
+          
+          if (commentItemContainers.length === 0) {
+            commentItemContainers = document.querySelectorAll('div[class*="CommentItem"]');
+            console.log(`Strategy 3: Found ${commentItemContainers.length} containers with CommentItem`);
+          }
+          
+          if (commentItemContainers.length === 0) {
+            // Look for containers that have both comment text and user links
+            const allDivs = document.querySelectorAll('div');
+            commentItemContainers = Array.from(allDivs).filter(div => {
+              return div.querySelector('p[data-e2e="comment-level-1"]') && div.querySelector('a[href^="/@"]');
+            });
+            console.log(`Strategy 4: Found ${commentItemContainers.length} containers with comment text and user links`);
+          }
 
           const comments = [];
 
@@ -192,16 +273,34 @@ async function scrapeTikTokComments(query) {
               
               const commentTextEl = container.querySelector('p[data-e2e="comment-level-1"]');
               const userLink = container.querySelector('a[href^="/@"]');
-              const usernameEl = userLink?.querySelector('span[data-e2e="comment-username-1"]');
-
+              
               const commentText = commentTextEl?.textContent?.trim();
-              const username = usernameEl?.textContent?.trim() || 'Unknown';
+              
+              let username = 'Unknown';
+              if (userLink) {
+                // Prefer <span data-e2e="comment-username-1"> if available
+                const usernameEl = userLink.querySelector('span[data-e2e="comment-username-1"]');
+
+                if (usernameEl && usernameEl.textContent.trim()) {
+                  username = usernameEl.textContent.trim();
+                } else if (userLink.textContent.trim()) {
+                  // Fallback to the <a> tag's text itself
+                  username = userLink.textContent.trim();
+                }
+              }
+              
               const profileUrl = userLink?.getAttribute('href') 
                 ? `https://www.tiktok.com${userLink.getAttribute('href')}` 
                 : null;
 
               console.log(`Comment text: "${commentText?.substring(0, 50)}..."`);
-              console.log(`Username: "${username}"`);
+              
+              // Show which method was used to extract username
+              let usernameSource = 'not found';
+              if (username !== 'Unknown' && userLink) {
+                usernameSource = userLink.querySelector('span[data-e2e="comment-username-1"]') ? 'from span' : 'from link text';
+              }
+              console.log(`Username: "${username}" (${usernameSource})`);
               console.log(`Profile URL: "${profileUrl || 'Not found'}"`);
 
               if (commentText && commentText.length > 3 && isValidComment(commentText)) {

@@ -134,7 +134,7 @@ export default function ResultsTable({ comments }: ResultsTableProps) {
                         🎥 View TikTok Video
                       </a>
                       <p className="text-gray-900 text-sm max-w-md">
-                        "{comment.commentText}"
+                        &quot;{comment.commentText}&quot;
                       </p>
                     </div>
                   </td>

@@ -69,7 +69,7 @@ export default function Home() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-              <span className="text-blue-800">Scanning TikTok for "{query}" leads...</span>
+              <span className="text-blue-800">Scanning TikTok for &quot;{query}&quot; leads...</span>
             </div>
           </div>
         )}
@@ -87,7 +87,7 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                Found {comments.length} potential leads for "{query}"
+                Found {comments.length} potential leads for &quot;{query}&quot;
               </h2>
             </div>
             <ResultsTable comments={comments} />
